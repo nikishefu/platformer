@@ -43,7 +43,7 @@ def grid(lst):
     for i in range(len(lst)):
         for j in range(len(lst[i])):
             draw_cell(lst, lst[i][j][5], (255, 255, 255), True)
-    pygame.display.flip()
+            pygame.display.flip()
 
 
 def draw_cell(lst, cell_id, color, name=False):
@@ -81,8 +81,8 @@ cell_status = False
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            break
-        elif event.type == pygame.KEYDOWN:
+            pygame.quit()
+        if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_o:
                 if not cell_status:
                     cell_status = True
@@ -91,4 +91,3 @@ while running:
                     cell_status = False
                     screen.fill((0, 0, 0))
                     pygame.display.flip()
-pygame.quit()
