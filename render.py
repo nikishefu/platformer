@@ -1,7 +1,7 @@
 import pygame
 
 
-WINDOW_SIZE = width, height = 900, 900   # Размер окна (пиксели) + видимая область
+WINDOW_SIZE = width, height = 500, 500   # Размер окна (пиксели) + видимая область
 
 
 def cell_lst(field_size, cell_size):   # field_size - размер поля (ячейки), cell_size - размер ячейки (пиксели)
@@ -39,10 +39,56 @@ def cell_lst(field_size, cell_size):   # field_size - размер поля (я�
     return lst
 
 
-cells = cell_lst((10, 5), 50)
+def grid(lst):
+    for i in range(len(lst)):
+        for j in range(len(lst[i])):
+            draw_cell(lst, lst[i][j][5], (255, 255, 255), True)
+    pygame.display.flip()
+
+
+def draw_cell(lst, cell_id, color, name=False):
+    if isinstance(color, str):
+        color = pygame.Color(color)
+    elif isinstance(color, list):
+        color = pygame.Color(color[0], color[1], color[2])
+    for i in range(len(lst)):
+        for j in range(len(lst[i])):
+            if lst[i][j][5] == cell_id:
+                pygame.draw.rect(screen, color, ((lst[i][j][0], lst[i][j][1]),
+                                                 (lst[i][j][2] - lst[i][j][0], lst[i][j][3] - lst[i][j][1])), 1)
+            if name:
+                number = lst[i][j][5]
+                y_cord = lst[i][j][1] + 15
+                x_cord = lst[i][j][0] + 20
+                if len(str(number)) == 2:
+                    x_cord = lst[i][j][0] + 14
+                elif len(str(number)) == 3:
+                    x_cord = lst[i][j][0] + 7
+                elif len(str(number)) == 4:
+                    x_cord = lst[i][j][0]
+                font = pygame.font.Font(None, 30)
+                text = font.render(str(number), True, (255, 255, 255))
+                screen.blit(text, (x_cord, y_cord))
+
+
+cells = cell_lst((10, 10), 50)
 print(cells)
 pygame.init()
 screen = pygame.display.set_mode(WINDOW_SIZE)
-while pygame.event.wait().type != pygame.QUIT:
-    pass
+screen.fill((0, 0, 0))
+running = True
+cell_status = False
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            break
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_o:
+                if not cell_status:
+                    cell_status = True
+                    grid(cells)
+                else:
+                    cell_status = False
+                    screen.fill((0, 0, 0))
+                    pygame.display.flip()
 pygame.quit()
