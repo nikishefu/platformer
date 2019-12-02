@@ -39,17 +39,17 @@ def cell_lst(field_size, cell_size):   # field_size - размер поля (я�
     return lst
 
 
-def grid(lst):
+def grid(lst, cell_size):
     for i in range(len(lst)):
         for j in range(len(lst[i])):
-            draw_cell(lst, lst[i][j][5], (255, 255, 255), True)
+            draw_cell(lst, lst[i][j][5], (255, 255, 255), cell_size, True)
             pygame.display.flip()
 
 
-def draw_cell(lst, cell_id, color, name=False):
+def draw_cell(lst, cell_id, color, cell_size=50, name=False):
     if isinstance(color, str):
         color = pygame.Color(color)
-    elif isinstance(color, list):
+    elif isinstance(color, tuple):
         color = pygame.Color(color[0], color[1], color[2])
     for i in range(len(lst)):
         for j in range(len(lst[i])):
@@ -66,16 +66,35 @@ def draw_cell(lst, cell_id, color, name=False):
                     x_cord = lst[i][j][0] + 7
                 elif len(str(number)) == 4:
                     x_cord = lst[i][j][0]
-                font = pygame.font.Font(None, 30)
+                font = pygame.font.Font(None, int(cell_size / 1.7))
                 text = font.render(str(number), True, (255, 255, 255))
                 screen.blit(text, (x_cord, y_cord))
 
 
-cells = cell_lst((10, 10), 50)
+def draw_rect_platform(cell_id, color, lst):
+    if isinstance(color, str):
+        color = pygame.Color(color)
+    elif isinstance(color, (list, tuple)):
+        color = pygame.Color(color[0], color[1], color[2])
+    for i in range(len(lst)):
+        for j in range(len(lst[i])):
+            if lst[i][j][5] == cell_id:
+                pygame.draw.rect(screen, color, pygame.Rect((lst[i][j][0], lst[i][j][1]),
+                                                            (lst[i][j][2] - lst[i][j][0],
+                                                             lst[i][j][3] - lst[i][j][1])))
+                pygame.display.flip()
+
+
+cell_size = 50
+cells = cell_lst((10, 10), cell_size)
 print(cells)
 pygame.init()
 screen = pygame.display.set_mode(WINDOW_SIZE)
 screen.fill((0, 0, 0))
+draw_rect_platform(6, (255, 0, 0), cells)
+draw_rect_platform(23, (255, 0, 0), cells)
+draw_rect_platform(9, (255, 0, 0), cells)
+draw_rect_platform(3, (255, 0, 0), cells)
 running = True
 cell_status = False
 while running:
@@ -86,7 +105,7 @@ while running:
             if event.key == pygame.K_o:
                 if not cell_status:
                     cell_status = True
-                    grid(cells)
+                    grid(cells, cell_size)
                 else:
                     cell_status = False
                     screen.fill((0, 0, 0))
