@@ -68,8 +68,7 @@ class Game:
 
         img5 = img.copy()
         pygame.draw.rect(img5, (255, 0, 0), (0, 0, 40, 110))
-        objects.Entity((self.all_sprites, self.barriers), img5, False,
-                       self).move(300, 400)
+        objects.Entity((self.all_sprites, self.barriers), img5, False, self).move(300, 400)
 
     def load_level(self, path):
         pass

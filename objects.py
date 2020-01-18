@@ -2,6 +2,7 @@
 
 import os
 import pygame
+from vectors import symmetry12
 
 GRAVITY = 0.5  # px/frame^2
 
@@ -40,19 +41,6 @@ def lines_collide(line1, line2) -> bool:
     return True
 
 
-def point_line_projection(point, line) -> (float, float):
-    xp, yp = point
-    x1, y1, x2, y2 = line
-    dx, dy = x2 - x1, y2 - y1
-    a = y1 * x2 - y2 * x1
-
-    x = ((xp * dx ** 2 + dy * (yp * dx - a)) /
-         (dx ** 2 + dy ** 2))
-    y = (x * dy + a) / dx
-
-    return x, y
-
-
 def blit_mask(source, dest, destpos, mask, maskrect):
     """
     Blit an source image to the dest surface, at destpos, with a mask, using
@@ -66,7 +54,8 @@ def blit_mask(source, dest, destpos, mask, maskrect):
 
 def sin_from_line(line):
     """
-    Косинус угла наклона линии относительно горизонта
+    Синус угла наклона линии относительно горизонта для эффекта сложности
+    подъёма
     """
     x1, y1, x2, y2 = line
     return abs((y2 - y1) / ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5)
@@ -163,6 +152,34 @@ class Weapon(Thing):
         self.radius = radius
 
 
+class Bullet(Entity):
+    def __init__(self, groups, game, speed, radius):
+        self.radius = radius
+        self.speed = speed
+        image = pygame.Surface((2 * radius, 2 * radius))
+        pygame.draw.circle(image, (254, 254, 255), (radius, radius), radius)
+        super().__init__(groups, image, False, game)
+
+    def update(self, *args):
+        x, y = self.x, self.y
+        line = (x, y, x + self.speed[0], y + self.speed[1])
+        collided = False
+        for obj in self.game.all_sprites:
+            obj_lines = obj.get_surface_lines()
+            for obj_line in obj_lines:
+                if lines_collide(obj_line, line):
+                    vec = (obj_line[2] - obj_line[0],
+                           obj_line[3] - obj_line[1])
+                    collided = True
+                    break
+            if collided:
+                break
+        if collided:
+            self.speed = symmetry12(self.speed, vec)
+        self.move(*self.speed)
+
+
+
 class Supply(Thing):
     def __init__(self, groups, image, absolute, game, picked_up, thing_type):
         super().__init__(groups, image, absolute, game, picked_up)
@@ -186,8 +203,8 @@ class LivingCreature(Entity):
         super().__init__(groups, image, False, game)
 
         # directions
-        self.RIGHT = True
-        self.LEFT = False
+        self.RIGHT = 1
+        self.LEFT = -1
 
         # object types
         self.BARRIER = 0
@@ -370,6 +387,11 @@ class Player(LivingCreature):
         # Прыжок
         if pressed[pygame.K_UP] and self.stands:
             self.jump()
+
+        # Bullet
+        if pressed[pygame.K_SPACE]:
+            Bullet((self.game.all_sprites, ), self.game,
+                   (5 * self.direction, 0), 3).move(self.x, self.y)
         super().update(*args)
 
 
