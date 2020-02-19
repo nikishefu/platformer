@@ -153,7 +153,8 @@ class Weapon(Thing):
 
 
 class Bullet(Entity):
-    def __init__(self, groups, game, speed, radius):
+    def __init__(self, groups, game, speed, radius, lifetime=50):
+        self.timer = lifetime
         self.radius = radius
         self.speed = speed
         image = pygame.Surface((2 * radius, 2 * radius))
@@ -161,10 +162,16 @@ class Bullet(Entity):
         super().__init__(groups, image, False, game)
 
     def update(self, *args):
+        self.timer -= 1
+        if not self.timer:
+            self.game.to_delete.append(self)
+            return
         x, y = self.x, self.y
         line = (x, y, x + self.speed[0], y + self.speed[1])
         collided = False
         for obj in self.game.all_sprites:
+            if obj == self or obj == self.game.player:
+                continue
             obj_lines = obj.get_surface_lines()
             for obj_line in obj_lines:
                 if lines_collide(obj_line, line):
@@ -176,26 +183,21 @@ class Bullet(Entity):
                 break
         if collided:
             self.speed = symmetry12(self.speed, vec)
+            self.move(*self.speed)
         self.move(*self.speed)
 
 
-
 class Supply(Thing):
-    def __init__(self, groups, image, absolute, game, picked_up, thing_type):
-        super().__init__(groups, image, absolute, game, picked_up)
+    def __init__(self, groups, image, absolute, game, thing_type):
+        super().__init__(groups, image, absolute, game)
         self.type = thing_type
 
 
-class Inventory(Entity):
-    def __init__(self, groups, game, max_len, cell_size):
-        image = pygame.Surface((max_len * cell_size, cell_size))
-        for i in range(max_len):
-            pygame.draw.rect(image, (255, 255, 255),
-                             (i * cell_size, 0,
-                              (i + 1) * cell_size, cell_size))
-        super().__init__(groups, image, True, game)
-        self.max_len = max_len
-        self.cell_size = cell_size
+class AnimatedSprite(Entity):
+    def __init__(self, groups, image, absolute: bool, game, images):
+        super().__init__(groups, image, absolute, game)
+        self.images = images
+
 
 
 class LivingCreature(Entity):
@@ -266,6 +268,10 @@ class LivingCreature(Entity):
         # TODO parse image
 
     def leave(self, obj, speed):
+        """
+        Выйти из объекта obj двигаясь на шаг speed и проверяя касание на
+        каждом шаге
+        """
         while pygame.sprite.collide_mask(self, obj):
             self.move(*speed)
 
@@ -354,11 +360,14 @@ class LivingCreature(Entity):
 
 
 class Player(LivingCreature):
-    def __init__(self, groups, image, game, max_speed, health, jump_speed):
+    def __init__(self, groups, image, game, max_speed, health, jump_speed,
+                 cool_down=20):
         super().__init__(groups, image, game, max_speed, health)
         self.jump_speed = jump_speed
         self.inventory = []
         self.selection = 0
+        self.fire_vector = (0, 1)
+        self.fire_cool_down = [0, cool_down]
 
     def add_to_inventory(self, thing: Thing):
         pass
@@ -370,6 +379,12 @@ class Player(LivingCreature):
     def jump(self):
         self.stands = False
         self.speed[1] = -self.jump_speed
+
+    def fire(self):
+        if not self.fire_cool_down[0]:
+            Bullet((self.game.all_sprites,), self.game,
+                   (5 * self.fire_vector[0], 5 * self.fire_vector[1]), 3).move(self.x, self.y)
+            self.fire_cool_down[0] = self.fire_cool_down[1]
 
     def update(self, *args):
         pressed = pygame.key.get_pressed()
@@ -388,10 +403,12 @@ class Player(LivingCreature):
         if pressed[pygame.K_UP] and self.stands:
             self.jump()
 
+        if self.fire_cool_down[0]:
+            self.fire_cool_down[0] -= 1
+
         # Bullet
         if pressed[pygame.K_SPACE]:
-            Bullet((self.game.all_sprites, ), self.game,
-                   (5 * self.direction, 0), 3).move(self.x, self.y)
+            self.fire()
         super().update(*args)
 
 

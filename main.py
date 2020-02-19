@@ -1,5 +1,6 @@
 import pygame
 import objects
+import vectors
 
 # Размеры окна
 WIN_W = 1080
@@ -34,15 +35,20 @@ class Camera:
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mouse.set_visible(False)
         self.running = True
         self.screen = pygame.display.set_mode((WIN_W, WIN_H))
         pygame.display.set_caption("Платформер")
+
+        self.to_delete = []
 
         # Группы спрайтов
         self.all_sprites = pygame.sprite.Group()
         self.player_gr = pygame.sprite.Group()
         self.platforms = pygame.sprite.Group()
         self.barriers = pygame.sprite.Group()
+        self.group_list = [self.all_sprites, self.player_gr, self.platforms,
+                           self.barriers]
 
         # Главные объекты
         self.camera = Camera()
@@ -70,6 +76,11 @@ class Game:
         pygame.draw.rect(img5, (255, 0, 0), (0, 0, 40, 110))
         objects.Entity((self.all_sprites, self.barriers), img5, False, self).move(300, 400)
 
+    def update_aim(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        vec = (mouse_x - self.player.rect.x, mouse_y - self.player.rect.y)
+        self.player.fire_vector = vectors.normalize(vec)
+
     def load_level(self, path):
         pass
 
@@ -82,13 +93,24 @@ class Game:
         self.screen.fill((0, 0, 0))
         self.all_sprites.update()
         self.all_sprites.draw(self.screen)
+        pygame.draw.circle(self.screen, (255, 255, 255),
+                           pygame.mouse.get_pos(), 10)
+        self.update_aim()
         pygame.display.flip()
+
+    def delete_objects(self):
+        for obj in self.to_delete[::-1]:
+            for i in self.group_list:
+                if i.has_internal(obj):
+                    i.remove_internal(obj)
+            del obj
 
     def run(self):
         clock = pygame.time.Clock()
         while self.running:
             self.handle_events()
             self.update()
+            self.delete_objects()
             clock.tick(FPS)
 
 
